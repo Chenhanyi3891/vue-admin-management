@@ -8,7 +8,7 @@
 ### 技术栈
 
 开发语言：HTML、CSS、Javascrip
-框架：Vue、vue-cli 脚手架、Vue-Router 路由
+框架：Vue、vue-cli 脚手架、Vue-Router 路由、Vuex
 组件：Element-UI、Axios、Echart
 
 # 开发说明

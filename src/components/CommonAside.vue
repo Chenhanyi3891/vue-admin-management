@@ -26,7 +26,7 @@
         </template>
 
         <el-menu-item-group v-for="child in item.children">
-          <el-menu-item :index="child.name">{{ child.label }}</el-menu-item>
+          <el-menu-item @click="clickMenu(child)" :index="child.name">{{ child.label }}</el-menu-item>
         </el-menu-item-group>
       </el-submenu>
     </el-menu>
@@ -53,6 +53,8 @@
 </style>
 
 <script>
+import tab from '@/store/tab';
+
 export default {
   name: 'CommonAside',
   data() {
@@ -83,16 +85,17 @@ export default {
           label: '其他',
           name: 'other',
           icon: 'location',
+          path: '/other',
           children: [
             {
-              path: '/page1',
+              path: '/other/page1',
               name: 'page1',
               label: '其他1',
               icon: 'setting',
               url: 'Other/PageOne',
             },
             {
-              path: '/page2',
+              path: '/other/page2',
               name: 'page2',
               label: '其他2',
               icon: 'setting',
@@ -116,17 +119,63 @@ export default {
     noChildren() {
       return this.menuData.filter((item) => !item.children);
     },
+    getCurrentBreadcrumbData(currentPath) {
+      //这里将当前路径进行切分
+      //如“/other/otherPage1” 转换成数组["other","otherPage1"]
+      const currentPathSplit = currentPath.path.split('/').filter((c) => !!c);
+      //二次转换，把除了一级节点之后的节点都拼接上之前的节点
+      //["other","otherPage1"] 转成 ["other","other/otherPage1"]
+      currentPathSplit.forEach((c, i) => {
+        if (i) {
+          currentPathSplit[i] = currentPathSplit[i - 1] + '/' + c;
+        } else {
+          currentPathSplit[i] = '/' + currentPathSplit[i];
+        }
+      });
+
+      //初始化一个面包屑列表，默认包含首页tab
+      const newBreadTabs = [
+        {
+          path: '/',
+          name: 'home',
+          label: '首页',
+          icon: 's-home',
+          url: 'Home/Home',
+        },
+      ];
+      //导航栏menuData可以看成一棵树，每个数据可以看作一个节点
+      let Tree = this.menuData;
+      currentPathSplit.forEach((c) => {
+        console.log(c);
+        //匹配path，获取menu tab
+        const findItem = Tree.find((tab) => tab.path == c);
+        if (findItem) {
+          //放进面包屑列表中
+          newBreadTabs.push(findItem);
+          //匹配到导航栏的节点之后，如果有chilren节点，则把这个chilren节点赋值给Tree，下次遍历就是去新的Tree里匹配
+          if (findItem.children) {
+            Tree = findItem.children;
+          }
+        }
+      });
+      //console.log('newBreadTabs', newBreadTabs);
+      return newBreadTabs;
+    },
+
     //点击跳转页面
     clickMenu(item) {
-      console.log(this.$route.path);
+      //console.log(item);
+      //console.log(this.$route);
       //使用router
       if (this.$route.path == item.path || (this.$route.path == '/home' && item.path == '/')) {
         return;
       }
       this.$router.push(item.path);
+      //更新面包屑list全局数据-这样面包屑数据才能被面包屑导航栏读取到展示和更新
+      const newBreadTabs = this.getCurrentBreadcrumbData(item);
+      this.$store.commit('addBreadTabs', newBreadTabs);
     },
     isCollapse() {
-      //console.log(this.$store.state.Tab.isCollapse);
       return this.$store.state.Tab.isCollapse;
     },
   },
